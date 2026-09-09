@@ -3,7 +3,11 @@
 import { useActionState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import type { Company } from '@prisma/client';
-import { createCompany, updateCompany, type CompanyActionState } from '@/app/companies/actions';
+import {
+  createCompany,
+  updateCompany,
+  type CompanyActionState,
+} from '@/app/(dashboard)/companies/actions';
 
 const initialState: CompanyActionState = { success: false };
 
