@@ -1,15 +1,13 @@
-import { NextResponse } from "next/server";
-import type { NextRequest } from "next/server";
-import { SESSION_COOKIE_NAME } from "@/lib/session-cookie";
+import { NextResponse } from 'next/server';
+import type { NextRequest } from 'next/server';
+import { SESSION_COOKIE_NAME } from '@/lib/session-cookie';
 
 // Solo le route effettivamente protette da autenticazione oggi nel progetto.
-const PROTECTED_PATHS = ["/dashboard"];
-const PUBLIC_ONLY_PATHS = ["/login"];
+const PROTECTED_PATHS = ['/dashboard', '/companies'];
+const PUBLIC_ONLY_PATHS = ['/login'];
 
 function matchesPath(pathname: string, paths: string[]): boolean {
-  return paths.some(
-    (path) => pathname === path || pathname.startsWith(`${path}/`)
-  );
+  return paths.some((path) => pathname === path || pathname.startsWith(`${path}/`));
 }
 
 // Nota: qui controlliamo solo che il cookie di sessione sia presente.
@@ -23,16 +21,16 @@ export function proxy(request: NextRequest) {
   const hasSessionCookie = request.cookies.has(SESSION_COOKIE_NAME);
 
   if (matchesPath(pathname, PROTECTED_PATHS) && !hasSessionCookie) {
-    return NextResponse.redirect(new URL("/login", request.url));
+    return NextResponse.redirect(new URL('/login', request.url));
   }
 
   if (matchesPath(pathname, PUBLIC_ONLY_PATHS) && hasSessionCookie) {
-    return NextResponse.redirect(new URL("/dashboard", request.url));
+    return NextResponse.redirect(new URL('/dashboard', request.url));
   }
 
   return NextResponse.next();
 }
 
 export const config = {
-  matcher: ["/dashboard/:path*", "/login"],
+  matcher: ['/dashboard/:path*', '/companies/:path*', '/login'],
 };

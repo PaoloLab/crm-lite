@@ -1,26 +1,139 @@
-@import "tailwindcss";
+@import 'tailwindcss';
+
+/*
+ * Design tokens — CRM-Lite (design-system.md).
+ * Tema fisso scuro: il documento non definisce una variante light, quindi i
+ * valori sono letterali (non c'è alcun @media (prefers-color-scheme) da
+ * gestire, a differenza dello scaffold di create-next-app che sostituiva).
+ */
+@theme inline {
+  /* Colori — superfici */
+  --color-background: #0f171f; /* Sfondo pagina: area centrale, topbar */
+  --color-foreground: var(--color-text-primary); /* alias retrocompatibile, vedi src/app/page.tsx */
+  --color-background-deep: #121b24; /* Sfondo profondo: sidebar, pannello destro, pannello login */
+  --color-surface-1: #1b2733; /* Card metriche, colonne kanban, tabella, modale, input login */
+  --color-surface-2: #22303e; /* Card trattativa, input modale, header tabella, riga espansa */
+  --color-surface-3: #2b3b4a; /* Avatar, badge tag, tooltip, tab attiva, hover icone */
+
+  /* Colori — accento primario */
+  --color-primary: #4e7cff; /* Bottone primario, tab attiva, toggle ON, stage "Qualificato" */
+  --color-primary-hover: #3f6bef; /* Hover bottone primario */
+  --color-primary-subtle: #26375c; /* Sfondo icona sidebar attiva, flash riga nuova trattativa */
+  --color-primary-soft: #b9ccff; /* Link, valori numerici accento, voci menu cliccabili */
+
+  /* Colori — bordi */
+  --color-border: #2e3d4b; /* Bordi input, modale, tooltip, avatar */
+  --color-border-subtle: #243240; /* Divisori, bordi card e colonne, separatori riga */
+
+  /* Colori — testo */
+  --color-text-primary: #edf1f4; /* Titoli, nomi azienda, valori */
+  --color-text-secondary: #9fb0be; /* Etichette, testo di supporto, icone inattive-hover */
+  --color-text-muted: #657686; /* Micro-label uppercase, timestamp, placeholder */
+
+  /* Colori — stato */
+  --color-success: #3ad6a0; /* Delta positivi, stage "Vinto" */
+  --color-success-bg: #1b3d33; /* Badge delta positivo */
+  --color-warning: #f2b84b; /* Stage "Proposta inviata", sparkline in calo */
+  --color-warning-bg: #403420; /* Badge su fondo ambra */
+  --color-danger: #ff6e61; /* Pallino "trattativa calda", delta negativi, voce "Esci" */
+  --color-danger-bg: #402521; /* Badge delta negativo, banner errore login */
+  --color-danger-border: #5a322c; /* Solo banner errore login */
+  --color-danger-text: #ffc2bb; /* Solo banner errore login */
+
+  /* Overlay modale (usare con backdrop-filter: blur(2px) sul componente) */
+  --color-overlay: rgba(8, 13, 18, 0.6);
+
+  /* Font family (le variabili --font-fraunces/--font-inter/--font-ibm-plex-mono
+     sono iniettate da next/font tramite le classi su <html>, vedi layout.tsx) */
+  --font-display: var(--font-fraunces), serif;
+  --font-sans: var(--font-inter), sans-serif;
+  --font-mono: var(--font-ibm-plex-mono), monospace;
+
+  /* Border-radius ricorrenti (nomi distinti dalla scala di default di
+     Tailwind — xs/sm/md/lg/xl/2xl/3xl/full — per non sovrascriverla) */
+  --radius-checkbox: 4px;
+  --radius-tooltip: 6px; /* anche voci menu utente */
+  --radius-icon: 7px; /* icone azione riga tabella */
+  --radius-control: 8px; /* bottoni, input, select, card trattativa, icone sidebar/topbar */
+  --radius-panel: 10px; /* menu utente, logo, icona sidebar attiva */
+  --radius-card: 12px; /* card metrica, colonna kanban, tabella */
+  --radius-modal: 14px;
+  --radius-pill: 20px; /* badge/pill, toggle */
+
+  /* Box-shadow ricorrenti */
+  --shadow-tooltip: 0 6px 16px rgba(0, 0, 0, 0.35);
+  --shadow-menu: 0 18px 40px rgba(0, 0, 0, 0.45);
+  --shadow-modal: 0 24px 60px rgba(0, 0, 0, 0.45);
+
+  /* Spacing ricorrenti: scala nominale aggiuntiva, non sostituisce il
+     moltiplicatore numerico di default di Tailwind (p-4, gap-2, ecc.
+     continuano a funzionare come prima).
+
+     Prefisso "nl-" (Northline, lo stesso usato dal mockup per le sue
+     keyframes nl-pulse e nl-flash) OBBLIGATORIO su ogni chiave: Tailwind v4
+     usa gli stessi nomi t-shirt (xs, sm, md, lg, xl, 2xl, 3xl, 4xl) anche
+     per il namespace container, condiviso dalle utility max-width, min-width,
+     width e height, e quando una chiave esiste sia nello spacing sia nel
+     container vince lo spacing. Senza prefisso, uno spacing "md" a 14px qui
+     sopra avrebbe rotto silenziosamente ogni max-w-md nel progetto (bug
+     reale trovato mentre si costruiva components/ui: aveva rotto
+     max-w-3xl e max-w-md di src/app/page.tsx e max-w-md di
+     CompanyForm.tsx — vedi AGENTS.md). */
+  --spacing-nl-3xs: 6px; /* gap icone sidebar */
+  --spacing-nl-2xs: 8px; /* gap bottone icona+testo, badge/pill */
+  --spacing-nl-xs: 10px; /* gap gruppo ricerca, margin card kanban, gap task/attività */
+  --spacing-nl-sm: 12px; /* coppia valore/stage, padding colonna kanban, padding-y riga tabella */
+  --spacing-nl-md: 14px; /* gap griglia metriche/board kanban, gap campi modale */
+  --spacing-nl-lg: 16px; /* padding-y card metrica, gap campi login */
+  --spacing-nl-xl: 18px; /* padding-x card trattativa/pannello destro, gap griglia dettaglio */
+  --spacing-nl-2xl: 22px; /* padding-y pannello destro, margin logo */
+  --spacing-nl-3xl: 24px; /* padding-x area main/topbar, padding modale */
+  --spacing-nl-4xl: 26px; /* padding-y area main, gap sezioni pannello destro */
+
+  /* Spacing aggiunti in components/ui/ (Button, Input, Badge, Dot): valori
+     puntuali del documento non coperti dalla scala sopra, che copriva solo
+     i valori ricorrenti su più sezioni. Nomi component/ruolo invece di
+     t-shirt size perché cadono "in mezzo" alla scala esistente o sono
+     troppo piccoli/specifici per estenderla in modo pulito. */
+  --spacing-nl-5xs: 2px; /* badge delta: padding verticale */
+  --spacing-nl-4xs: 3px; /* badge tag: padding verticale */
+  --spacing-nl-badge-x: 7px; /* badge delta: padding orizzontale; riusato come diametro Dot */
+  --spacing-nl-control-y: 9px; /* bottone/input: padding verticale standard */
+  --spacing-nl-control-y-login: 11px; /* input variante login: padding verticale */
+  --spacing-nl-control-x-login: 13px; /* input variante login: padding orizzontale; riusato anche per il padding orizzontale di DealCard (stesso valore nel documento: "Card trattativa: padding 12px 13px") */
+
+  /* Spacing aggiunti per Card/Table (componenti UI). */
+  --spacing-nl-expand-indent: 52px; /* riga espansa tabella: padding-left (rientro sotto il chevron) */
+
+  /* Font-size puntuali richiesti da Button/Input/Badge. Non riusiamo le
+     chiavi di default di Tailwind (xs/sm/base/lg/...) perché sono già
+     usate altrove nel progetto con i valori standard di Tailwind (es.
+     text-sm in CompanyForm) e ridefinirle cambierebbe pagine già esistenti. */
+  --text-tag: 10.5px; /* badge tag, mono */
+  --text-label: 11.5px; /* label input uppercase; badge delta, mono; header tabella */
+  --text-ui: 13.5px; /* testo standard bottoni/input */
+  --text-ui-lg: 14px; /* bottone full-width (login) */
+  --text-body: 13px; /* riga tabella, task, dettagli, card trattativa (documento: "Riga tabella, task, dettagli") */
+  --text-metric: 26px; /* valore card metrica, font-display */
+
+  /* Border-radius aggiunti per Card (sparkline). Non riusa la scala sopra:
+     si applica solo agli angoli superiori (rounded-t-bar), le barre non
+     hanno un ruolo "a schermo intero" come card/modal/pill. */
+  --radius-bar: 2px;
+
+  /* Letter-spacing per micro-label/label uppercase */
+  --tracking-label: 0.04em;
+}
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
-
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+  /* Non è un token Tailwind riconosciuto (namespace --gradient-* non
+     generano utility): variabile pronta per bg-[image:var(--gradient-logo)]. */
+  --gradient-logo: linear-gradient(155deg, #4e7cff, #2a4fcc);
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  background: var(--color-background);
+  color: var(--color-text-primary);
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
 }
