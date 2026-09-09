@@ -2,7 +2,7 @@ import { randomUUID } from "crypto";
 import { cookies } from "next/headers";
 import { getIronSession, type SessionOptions } from "iron-session";
 import bcrypt from "bcryptjs";
-import { Prisma, type User } from "@prisma/client";
+import { Prisma, type Role, type User } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { SESSION_COOKIE_NAME } from "@/lib/session-cookie";
 
@@ -28,7 +28,7 @@ async function getCookieSession() {
 }
 
 // Nessun campo sensibile (passwordHash) presente: whitelist esplicita dei campi esposti.
-function toSafeUser(user: User) {
+function toSafeUser(user: User & { role: Role }) {
   return {
     userId: user.userId,
     username: user.username,
@@ -36,6 +36,11 @@ function toSafeUser(user: User) {
     surname: user.surname,
     birthDate: user.birthDate,
     roleId: user.roleId,
+    role: {
+      roleId: user.role.roleId,
+      description: user.role.description,
+      level: user.role.level,
+    },
   };
 }
 
@@ -88,7 +93,7 @@ export async function getCurrentUser(): Promise<SafeUser | null> {
 
   const session = await prisma.session.findUnique({
     where: { sessionToken },
-    include: { user: true },
+    include: { user: { include: { role: true } } },
   });
 
   if (!session || session.expires < new Date()) {

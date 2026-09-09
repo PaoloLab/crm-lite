@@ -1,15 +1,9 @@
 import { redirect } from "next/navigation";
-import { getCurrentUser, logout } from "@/lib/session";
+import { logout } from "@/lib/session";
+import { requireAuth, requireAdmin } from "@/lib/authorization";
 
 export default async function DashboardPage() {
-  const user = await getCurrentUser();
-
-  if (!user) {
-    // Non un redirect diretto a /login: un Server Component non può
-    // cancellare il cookie di sessione ormai orfano (vedi la route per il
-    // perché), e senza pulirlo il proxy rimanderebbe qui all'infinito.
-    redirect("/api/session/clear");
-  }
+  const user = await requireAuth();
 
   return (
     <div>
@@ -24,6 +18,29 @@ export default async function DashboardPage() {
         }}
       >
         <button type="submit">Logout</button>
+      </form>
+
+      {/*
+        TEST TEMPORANEO - da rimuovere quando esiste una vera pagina admin.
+
+        Il bottone è visibile a chiunque sia loggato, admin o no: qui non
+        serve nasconderlo con isAdmin(), perché è proprio così che si
+        verifica che il controllo server-side funzioni in entrambi i casi.
+        La vera protezione è dentro la Server Action, che chiama
+        requireAdmin() come primo controllo prima di fare qualunque altra
+        cosa - esattamente come dovrebbe fare qualunque Server Action
+        riservata agli admin in futuro.
+      */}
+      <form
+        action={async () => {
+          "use server";
+          const adminUser = await requireAdmin();
+          console.log(
+            `[TEST TEMPORANEO] Accesso area admin concesso a "${adminUser.username}" (role: ${adminUser.role.description}, level: ${adminUser.role.level})`
+          );
+        }}
+      >
+        <button type="submit">Area riservata admin</button>
       </form>
     </div>
   );
