@@ -10,6 +10,9 @@ export type { BadgeProps, BadgeVariant } from './Badge';
 export { Dot } from './Dot';
 export type { DotProps, DotColor } from './Dot';
 
+export { Checkbox } from './Checkbox';
+export type { CheckboxProps } from './Checkbox';
+
 export { MetricCard, DealCard } from './Card';
 export type { MetricCardProps, DealCardProps } from './Card';
 

@@ -10,6 +10,13 @@ export interface InputProps extends InputHTMLAttributes<HTMLInputElement> {
   mono?: boolean;
   /** Icona opzionale a sinistra (es. lucide Search, size 15, opacity .7 — usata dal campo ricerca topbar). */
   icon?: ReactNode;
+  /**
+   * Elemento opzionale a destra (es. bottone toggle mostra/nascondi password).
+   * A differenza di `icon`, tipicamente interattivo: Input resta comunque
+   * senza "use client" perché non gestisce lui stesso lo stato/handler,
+   * si limita a renderizzare il nodo ricevuto (come già fa con `icon`).
+   */
+  rightElement?: ReactNode;
 }
 
 const VARIANT_BG_Y_CLASSES: Record<InputVariant, string> = {
@@ -39,11 +46,21 @@ const VARIANT_ICON_LEFT: Record<InputVariant, string> = {
   search: 'left-nl-md',
 };
 
+// Simmetrico a VARIANT_ICON_LEFT: gli stessi token di spacing per variante
+// (VARIANT_PADDING_LEFT/RIGHT già usano gli stessi valori nominali a sinistra
+// e a destra), solo con la proprietà "right-" invece di "left-".
+const VARIANT_ICON_RIGHT: Record<InputVariant, string> = {
+  default: 'right-nl-sm',
+  login: 'right-nl-control-x-login',
+  search: 'right-nl-md',
+};
+
 export function Input({
   label,
   variant = 'default',
   mono = false,
   icon,
+  rightElement,
   className,
   ...rest
 }: InputProps) {
@@ -68,16 +85,25 @@ export function Input({
           'disabled:opacity-50 disabled:cursor-not-allowed',
           mono ? 'font-mono' : 'font-sans',
           VARIANT_BG_Y_CLASSES[variant],
-          VARIANT_PADDING_RIGHT[variant],
           // 38px: non un valore del documento, solo spazio calcolato per non
-          // sovrapporre testo e icona (icona a 14px + 15px di larghezza + gap).
+          // sovrapporre testo e icona/rightElement (14px + ~15-16px + gap).
           icon ? 'pl-[38px]' : VARIANT_PADDING_LEFT[variant],
+          rightElement ? 'pr-[38px]' : VARIANT_PADDING_RIGHT[variant],
           className,
         ]
           .filter(Boolean)
           .join(' ')}
         {...rest}
       />
+      {rightElement && (
+        <span
+          className={['absolute top-1/2 -translate-y-1/2 text-text-muted', VARIANT_ICON_RIGHT[variant]].join(
+            ' '
+          )}
+        >
+          {rightElement}
+        </span>
+      )}
     </div>
   );
 
