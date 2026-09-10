@@ -1,12 +1,44 @@
 'use client';
 
+import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { Button } from '@/components/ui';
+import { Button, Modal } from '@/components/ui';
+import { CompanyForm } from './CompanyForm';
 
-// Piccolo wrapper client: <Button> è un <button>, quindi non può stare
-// annidato dentro un <Link> (<a><button>...</button></a> non è HTML valido).
-// La navigazione avviene quindi via useRouter().push, non un href diretto.
+// Possiede lo stato di apertura del modale (vedi requisiti: nessun context
+// globale, ogni pagina/bottone gestisce il proprio). Al successo chiude il
+// modale e fa router.refresh() invece di router.push('/companies') (già
+// siamo su quella pagina, quindi la navigazione di CompanyForm sarebbe un
+// no-op e non riprenderebbe i dati aggiornati dal Server Component).
 export function NewCompanyButton() {
   const router = useRouter();
-  return <Button onClick={() => router.push('/companies/new')}>+ Nuova azienda</Button>;
+  const [open, setOpen] = useState(false);
+
+  function handleClose() {
+    setOpen(false);
+  }
+
+  return (
+    <>
+      <Button onClick={() => setOpen(true)}>+ Nuova azienda</Button>
+
+      <Modal
+        open={open}
+        onClose={handleClose}
+        title="Nuova azienda"
+        footer={
+          <Button variant="secondary" type="button" onClick={handleClose}>
+            Annulla
+          </Button>
+        }
+      >
+        <CompanyForm
+          onSuccess={() => {
+            setOpen(false);
+            router.refresh();
+          }}
+        />
+      </Modal>
+    </>
+  );
 }

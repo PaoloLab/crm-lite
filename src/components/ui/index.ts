@@ -18,3 +18,6 @@ export type { MetricCardProps, DealCardProps } from './Card';
 
 export { Table } from './Table';
 export type { TableColumn, TableProps } from './Table';
+
+export { Modal } from './Modal';
+export type { ModalProps } from './Modal';

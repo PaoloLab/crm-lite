@@ -11,16 +11,27 @@ import {
 
 const initialState: CompanyActionState = { success: false };
 
-export function CompanyForm({ defaultValues }: { defaultValues?: Company }) {
+export function CompanyForm({
+  defaultValues,
+  onSuccess,
+}: {
+  defaultValues?: Company;
+  /** Se assente, comportamento invariato: redirect a /companies dopo il successo. */
+  onSuccess?: () => void;
+}) {
   const router = useRouter();
   const action = defaultValues ? updateCompany.bind(null, defaultValues.companyId) : createCompany;
   const [state, formAction, pending] = useActionState(action, initialState);
 
   useEffect(() => {
     if (state.success) {
-      router.push('/companies');
+      if (onSuccess) {
+        onSuccess();
+      } else {
+        router.push('/companies');
+      }
     }
-  }, [state.success, router]);
+  }, [state.success, onSuccess, router]);
 
   return (
     <form action={formAction} className="flex max-w-md flex-col gap-4">
