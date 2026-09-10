@@ -69,6 +69,7 @@ DealState
 - code           // es. 1,2,3... ordine progressivo
 - slug           // es. "new", "contacted", "proposal", "won", "lost"
 - label          // es. "Nuovo Lead" (testo mostrato in UI)
+- sequence       // sequenza stati
 
 Deal
 - dealId (PK)

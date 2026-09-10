@@ -64,6 +64,7 @@ model DealState {
   code        String @unique
   slug        String @unique
   label       String
+  sequence       Int
 
   deals Deal[]
 

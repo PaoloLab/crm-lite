@@ -22,9 +22,10 @@ async function main() {
 
   const dealStates = await prisma.dealState.createMany({
     data: [
-      { code: "OPEN", slug: "open", label: "Aperta" },
-      { code: "WON", slug: "won", label: "Vinta" },
-      { code: "LOST", slug: "lost", label: "Persa" },
+      { code: "NEW", slug: "nuovo", label: "Nuovo", sequence: 1 },
+      { code: "PROPOSAL", slug: "proposta", label: "Proposta", sequence: 2 },
+      { code: "WON", slug: "vinto", label: "Vinto", sequence: 3 },
+      { code: "LOST", slug: "perso", label: "Perso", sequence: 4 },
     ],
   });
 
