@@ -22,9 +22,9 @@ interface NavItem {
 
 // Voci dedotte dalle icone nello screenshot (deciso, vedi riepilogo):
 // building -> Aziende, users -> Contatti, trending-up -> Trattative/Pipeline,
-// clock -> Attività, bar-chart -> Report. Le pagine di /contacts, /deals,
-// /activities, /reports non esistono ancora: il click porta a un 404 di
-// Next.js finché non verranno costruite.
+// clock -> Attività, bar-chart -> Report. Le pagine di /activities, /reports
+// non esistono ancora: il click porta a un 404 di Next.js finché non
+// verranno costruite.
 const NAV_ITEMS: NavItem[] = [
   { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
   { href: '/companies', label: 'Aziende', icon: Building2 },

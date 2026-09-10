@@ -1,0 +1,81 @@
+import { prisma } from '@/lib/prisma';
+import { requireAuth } from '@/lib/authorization';
+import { TopbarAction } from '@/components/layout/TopbarAction';
+import { DealsView } from '@/components/deals/DealsView';
+import { NewDealButton } from '@/components/deals/NewDealButton';
+import type { DealRowData } from '@/components/deals/DealsTable';
+
+export default async function DealsPage() {
+  await requireAuth();
+
+  // Dati per la lista trattative: UNA SOLA query Prisma (deal.findMany) con
+  // include di contact (+ company annidata), dealState, user — nessuna
+  // query per riga.
+  //
+  // dealStates/contacts sono invece dati di riferimento per il form di
+  // creazione (select) e per le colonne Kanban (che devono mostrare anche
+  // stati senza trattative, quindi non possono essere derivati dai risultati
+  // di deal.findMany): due query aggiuntive necessarie, stesso principio già
+  // usato in ContactsPage (contacts + companies via Promise.all) per i dati
+  // di supporto al form.
+  const [deals, dealStates, contacts] = await Promise.all([
+    prisma.deal.findMany({
+      orderBy: { dateLastModified: 'desc' },
+      include: {
+        contact: { include: { company: { select: { name: true } } } },
+        dealState: true,
+        user: { select: { name: true, surname: true } },
+      },
+    }),
+    prisma.dealState.findMany({ orderBy: { sequence: 'asc' } }),
+    prisma.contact.findMany({
+      orderBy: [{ surname: 'asc' }, { name: 'asc' }],
+      select: { contactId: true, name: true, surname: true },
+    }),
+  ]);
+
+  // Stato di default per una nuova trattativa: quello con slug "nuovo",
+  // recuperato via query (non hardcodato). Fallback al primo stato per
+  // sequence solo per robustezza difensiva: prisma/seed.ts garantisce che
+  // "nuovo" esista sempre.
+  const defaultDealState = dealStates.find((state) => state.slug === 'nuovo') ?? dealStates[0];
+
+  const dealRows: (DealRowData & { dealStateId: number })[] = deals.map((deal) => ({
+    dealId: deal.dealId,
+    title: deal.title,
+    value: Number(deal.value),
+    dealStateId: deal.dealStateId,
+    dealStateCode: deal.dealState.code,
+    dealStateLabel: deal.dealState.label,
+    contactName: `${deal.contact.name} ${deal.contact.surname}`,
+    companyName: deal.contact.company?.name ?? null,
+    dateLastModified: deal.dateLastModified,
+  }));
+
+  const dealStateOptions = dealStates.map((state) => ({
+    dealStateId: state.dealStateId,
+    code: state.code,
+    label: state.label,
+  }));
+
+  return (
+    <div className="flex flex-col gap-nl-xl">
+      <TopbarAction>
+        <NewDealButton
+          contacts={contacts}
+          dealStates={dealStates.map((state) => ({
+            dealStateId: state.dealStateId,
+            label: state.label,
+          }))}
+          defaultDealStateId={defaultDealState.dealStateId}
+        />
+      </TopbarAction>
+
+      <div>
+        <h1 className="font-display text-2xl font-medium text-text-primary">Trattative</h1>
+      </div>
+
+      <DealsView deals={dealRows} dealStates={dealStateOptions} contacts={contacts} />
+    </div>
+  );
+}
