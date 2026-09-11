@@ -38,6 +38,7 @@ export type DealActionState = {
 };
 
 const FOREIGN_KEY_CONSTRAINT_ERROR_CODE = 'P2003';
+const RECORD_NOT_FOUND_ERROR_CODE = 'P2025';
 
 export async function createDeal(
   _prevState: DealActionState,
@@ -82,6 +83,58 @@ export async function createDeal(
         success: false,
         error: { formError: 'Il contatto o lo stato selezionato non è più valido.' },
       };
+    }
+    throw error;
+  }
+
+  revalidatePath('/deals');
+  return { success: true };
+}
+
+// Chiamata direttamente da event handler client (drag&drop Kanban, select
+// Elenco), non da un <form>: niente useActionState/FormData qui, solo
+// argomenti primitivi — pattern diverso da createDeal per questo motivo,
+// stesso principio di validazione/ritorno { success, error? } senza throw.
+const updateDealStateSchema = z.object({
+  dealId: z.number().int().positive(),
+  dealStateId: z.number().int().positive(),
+});
+
+export type UpdateDealStateResult = { success: true } | { success: false; error: string };
+
+// Nessun vincolo sulle transizioni ammesse (requisito di business): qualunque
+// dealStateId valido è accettato da qualunque stato di partenza. userId non
+// viene toccato: il proprietario della Deal non cambia quando cambia stato.
+// dateLastModified non è impostato esplicitamente: è @updatedAt in
+// schema.prisma, Prisma lo aggiorna da solo su qualunque update() che scrive.
+export async function updateDealState(
+  dealId: number,
+  dealStateId: number
+): Promise<UpdateDealStateResult> {
+  await requireAuth();
+
+  const parsed = updateDealStateSchema.safeParse({ dealId, dealStateId });
+  if (!parsed.success) {
+    return { success: false, error: 'Dati non validi.' };
+  }
+
+  try {
+    await prisma.deal.update({
+      where: { dealId: parsed.data.dealId },
+      data: { dealStateId: parsed.data.dealStateId },
+    });
+  } catch (error) {
+    // Stesso pattern di traduzione errori Prisma noti di createDeal: lo stato
+    // scelto potrebbe non esistere più (P2003) o la Deal essere stata
+    // eliminata da un altro utente tra il caricamento della pagina e il drop
+    // (P2025) — entrambi race condition attese, non un bug, niente throw.
+    if (error instanceof Prisma.PrismaClientKnownRequestError) {
+      if (error.code === FOREIGN_KEY_CONSTRAINT_ERROR_CODE) {
+        return { success: false, error: 'Lo stato selezionato non è più valido.' };
+      }
+      if (error.code === RECORD_NOT_FOUND_ERROR_CODE) {
+        return { success: false, error: 'Trattativa non trovata: potrebbe essere stata eliminata.' };
+      }
     }
     throw error;
   }

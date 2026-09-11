@@ -40,7 +40,7 @@ export default async function DealsPage() {
   // "nuovo" esista sempre.
   const defaultDealState = dealStates.find((state) => state.slug === 'nuovo') ?? dealStates[0];
 
-  const dealRows: (DealRowData & { dealStateId: number })[] = deals.map((deal) => ({
+  const dealRows: DealRowData[] = deals.map((deal) => ({
     dealId: deal.dealId,
     title: deal.title,
     value: Number(deal.value),

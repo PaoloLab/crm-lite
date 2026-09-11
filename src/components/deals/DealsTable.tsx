@@ -7,11 +7,22 @@ export interface DealRowData {
   dealId: number;
   title: string;
   value: number;
+  dealStateId: number;
   dealStateCode: string;
   dealStateLabel: string;
   contactName: string;
   companyName: string | null;
   dateLastModified: Date;
+}
+
+// Stessa forma di DealsKanbanState (DealsKanban.tsx): duplicata qui invece di
+// importata per evitare un import circolare (DealsKanban importa già
+// DealRowData da questo file) — caso d'uso singolo, stesso criterio già usato
+// altrove nel progetto per piccole forme di prop one-off (vedi AGENTS.md).
+export interface DealStageOption {
+  dealStateId: number;
+  code: string;
+  label: string;
 }
 
 const currencyFormatter = new Intl.NumberFormat('it-IT', { style: 'currency', currency: 'EUR' });
@@ -21,7 +32,22 @@ const dateFormatter = new Intl.DateTimeFormat('it-IT', {
   year: 'numeric',
 });
 
-export function DealsTable({ deals }: { deals: DealRowData[] }) {
+// Stesso stile del select nativo di DealForm (nessun componente Select in
+// components/ui/), ma più compatto (padding ridotto) per stare dentro una
+// cella di tabella.
+const STAGE_SELECT_CLASSES =
+  'rounded-control border border-border bg-surface-2 py-nl-4xs pl-nl-2xs pr-nl-2xs text-body text-text-primary focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary';
+
+export function DealsTable({
+  deals,
+  dealStates,
+  onDealStateChange,
+}: {
+  deals: DealRowData[];
+  /** Tutti i DealState disponibili, ordinate per sequence dal chiamante (page.tsx). */
+  dealStates: DealStageOption[];
+  onDealStateChange: (dealId: number, dealStateId: number) => void;
+}) {
   const columns: TableColumn<DealRowData>[] = [
     {
       // Non elencata esplicitamente tra le colonne richieste, ma senza titolo
@@ -44,13 +70,31 @@ export function DealsTable({ deals }: { deals: DealRowData[] }) {
     {
       key: 'dealStateLabel',
       label: 'Stage',
-      width: '140px',
-      render: (row) => (
-        <span className="flex items-center gap-nl-2xs">
-          <Dot color={DEAL_STATE_COLOR[row.dealStateCode] ?? DEFAULT_DEAL_STATE_COLOR} />
-          {row.dealStateLabel}
-        </span>
-      ),
+      width: '160px',
+      render: (row) => {
+        // Colore derivato da dealStates (prop, sempre aggiornata) via
+        // dealStateId, non da row.dealStateCode: dopo un cambio stato
+        // ottimistico row.dealStateCode resterebbe quello vecchio, il colore
+        // no.
+        const code = dealStates.find((state) => state.dealStateId === row.dealStateId)?.code;
+        return (
+          <span className="flex items-center gap-nl-2xs">
+            <Dot color={DEAL_STATE_COLOR[code ?? ''] ?? DEFAULT_DEAL_STATE_COLOR} />
+            <select
+              value={row.dealStateId}
+              onChange={(event) => onDealStateChange(row.dealId, Number(event.target.value))}
+              className={STAGE_SELECT_CLASSES}
+              aria-label={`Stato di ${row.title}`}
+            >
+              {dealStates.map((state) => (
+                <option key={state.dealStateId} value={state.dealStateId}>
+                  {state.label}
+                </option>
+              ))}
+            </select>
+          </span>
+        );
+      },
     },
     {
       key: 'value',
