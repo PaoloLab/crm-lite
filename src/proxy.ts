@@ -3,7 +3,7 @@ import type { NextRequest } from 'next/server';
 import { SESSION_COOKIE_NAME } from '@/lib/session-cookie';
 
 // Solo le route effettivamente protette da autenticazione oggi nel progetto.
-const PROTECTED_PATHS = ['/dashboard', '/companies', '/contacts', '/deals'];
+const PROTECTED_PATHS = ['/dashboard', '/companies', '/contacts', '/deals', '/activities'];
 const PUBLIC_ONLY_PATHS = ['/login'];
 
 function matchesPath(pathname: string, paths: string[]): boolean {
@@ -37,6 +37,7 @@ export const config = {
     '/companies/:path*',
     '/contacts/:path*',
     '/deals/:path*',
+    '/activities/:path*',
     '/login',
   ],
 };

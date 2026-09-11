@@ -45,10 +45,11 @@ Definizione completa in `prisma/schema.prisma`; qui solo un riferimento sintetic
 - `User` — utenti di sistema (credenziali, anagrafica, `roleId`)
 - `Company` — aziende clienti
 - `Contact` — contatti, opzionalmente collegati a una `Company`
-- `DealState` — stati possibili di una trattativa (lookup table: nuovo/contattato/proposta/vinta/persa...)
+- `DealState` — stati possibili di una trattativa (lookup table: i 4 stati realmente seedati in `prisma/seed.ts` sono `nuovo`/`proposta`/`vinto`/`perso`, non esiste uno stato "contattato")
 - `Deal` — trattativa/opportunità commerciale (valore, stato, proprietario, contatto)
-- `ActivityType` — tipologie di attività (chiamata/email/meeting/nota...)
+- `ActivityType` — tipologie di attività: solo 3, fissate e seedate in `prisma/seed.ts` (`chiamata`/`email`/`meeting`), nessun tipo "nota" e nessuna gestione dinamica (vedi sezione CRUD Activity più sotto)
 - `Activity` — attività svolte su una `Deal`
+- `Session` — sessioni custom su cookie firmato (vedi sezione Autenticazione sopra: non è Auth.js/NextAuth)
 - Nota di design: `Activity.userId` è tenuto distinto da `Deal.userId` apposta, per non perdere la storia di chi ha svolto un'attività quando la deal viene riassegnata a un altro utente.
 
 ## Route protette

@@ -1,0 +1,81 @@
+import { prisma } from '@/lib/prisma';
+import { requireAuth } from '@/lib/authorization';
+import { TopbarAction } from '@/components/layout/TopbarAction';
+import { ActivitiesView } from '@/components/activities/ActivitiesView';
+import { NewActivityButton } from '@/components/activities/NewActivityButton';
+import type { ActivityRowData } from '@/components/activities/ActivitiesTable';
+import type { ActivityFormDealOption } from '@/components/activities/ActivityForm';
+
+function initialsOf(name: string, surname: string): string {
+  return `${name.charAt(0)}${surname.charAt(0)}`.toUpperCase();
+}
+
+// "Titolo — Azienda" per il select trattativa (creazione + filtro): stesso
+// fallback azienda/contatto già usato in DealsTable quando la trattativa non
+// ha un'azienda collegata.
+function dealSubtitleOf(deal: { contact: { name: string; surname: string; company: { name: string } | null } }): string {
+  return deal.contact.company?.name ?? `${deal.contact.name} ${deal.contact.surname}`;
+}
+
+export default async function ActivitiesPage() {
+  await requireAuth();
+
+  // Dati per la lista attività: UNA SOLA query Prisma (activity.findMany) con
+  // include di deal (+ contact/company annidati), user, activityType — nessuna
+  // query per riga. dealStates/activityTypes/deals sono dati di supporto per i
+  // filtri e il form di creazione (stesso principio già usato in DealsPage).
+  const [activities, deals, activityTypes] = await Promise.all([
+    prisma.activity.findMany({
+      orderBy: { date: 'desc' },
+      include: {
+        deal: { include: { contact: { include: { company: { select: { name: true } } } } } },
+        user: { select: { name: true, surname: true } },
+        activityType: true,
+      },
+    }),
+    prisma.deal.findMany({
+      orderBy: { title: 'asc' },
+      include: { contact: { include: { company: { select: { name: true } } } } },
+    }),
+    prisma.activityType.findMany({ orderBy: { activityTypeId: 'asc' } }),
+  ]);
+
+  const activityRows: ActivityRowData[] = activities.map((activity) => ({
+    activityId: activity.activityId,
+    description: activity.description,
+    date: activity.date,
+    dealId: activity.dealId,
+    dealTitle: activity.deal.title,
+    dealSubtitle: dealSubtitleOf(activity.deal),
+    activityTypeCode: activity.activityType.code,
+    activityTypeLabel: activity.activityType.label,
+    userName: `${activity.user.name} ${activity.user.surname}`,
+    userInitials: initialsOf(activity.user.name, activity.user.surname),
+  }));
+
+  const dealOptions: ActivityFormDealOption[] = deals.map((deal) => ({
+    dealId: deal.dealId,
+    title: deal.title,
+    subtitle: dealSubtitleOf(deal),
+  }));
+
+  const activityTypeOptions = activityTypes.map((type) => ({
+    activityTypeId: type.activityTypeId,
+    code: type.code,
+    label: type.label,
+  }));
+
+  return (
+    <div className="flex flex-col gap-nl-xl">
+      <TopbarAction>
+        <NewActivityButton deals={dealOptions} activityTypes={activityTypeOptions} />
+      </TopbarAction>
+
+      <div>
+        <h1 className="font-display text-2xl font-medium text-text-primary">Attività</h1>
+      </div>
+
+      <ActivitiesView activities={activityRows} deals={dealOptions} activityTypes={activityTypeOptions} />
+    </div>
+  );
+}
