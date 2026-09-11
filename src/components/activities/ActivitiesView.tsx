@@ -50,7 +50,9 @@ export function ActivitiesView({
   }, [activities, searchText, typeFilter, dealFilter, sortOrder]);
 
   return (
-    <div className="flex flex-col gap-nl-lg">
+    <div className="flex h-full flex-col gap-nl-lg">
+      {/* Barra filtri fissa: non scorre, solo l'elenco sotto ha il proprio
+          scroll interno. */}
       <div className="flex flex-wrap items-center justify-between gap-nl-sm">
         <div className="flex flex-wrap items-center gap-nl-sm">
           <div className="w-[260px]">
@@ -128,7 +130,9 @@ export function ActivitiesView({
         </div>
       </div>
 
-      <ActivitiesTable activities={filteredActivities} groupByDeal={groupByDeal} />
+      <div className="min-h-0 flex-1 overflow-y-auto">
+        <ActivitiesTable activities={filteredActivities} groupByDeal={groupByDeal} />
+      </div>
     </div>
   );
 }

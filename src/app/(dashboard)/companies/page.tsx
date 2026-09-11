@@ -82,43 +82,49 @@ export default async function CompaniesPage() {
   const totalDealsValue = companyRows.reduce((sum, row) => sum + row.dealsValue, 0);
 
   return (
-    <div className="flex flex-col gap-nl-xl">
+    <div className="flex h-full flex-col gap-nl-xl">
       <TopbarAction>
         <NewCompanyButton />
       </TopbarAction>
 
-      <div>
-        <h1 className="font-display text-2xl font-medium text-text-primary">Aziende</h1>
+      {/* Intestazione fissa (titolo + card riassuntive): non deve scorrere
+          insieme all'elenco sotto, solo l'elenco ha il proprio scroll interno. */}
+      <div className="flex flex-col gap-nl-xl">
+        <div>
+          <h1 className="font-display text-2xl font-medium text-text-primary">Aziende</h1>
+        </div>
+
+        <div className="grid grid-cols-1 gap-nl-md sm:grid-cols-2 lg:grid-cols-4">
+          <MetricCard
+            label="Aziende registrate"
+            value={String(registeredCompaniesCount)}
+            delta={NO_TREND_DELTA}
+            sparkline={NO_TREND_SPARKLINE}
+          />
+          <MetricCard
+            label="Clienti attivi"
+            value={String(activeClientsCount)}
+            delta={NO_TREND_DELTA}
+            sparkline={NO_TREND_SPARKLINE}
+          />
+          <MetricCard
+            label="Prospect in corso"
+            value={String(prospectsCount)}
+            delta={NO_TREND_DELTA}
+            sparkline={NO_TREND_SPARKLINE}
+          />
+          <MetricCard
+            label="Valore complessivo"
+            value={currencyFormatter.format(totalDealsValue)}
+            delta={NO_TREND_DELTA}
+            sparkline={NO_TREND_SPARKLINE}
+          />
+        </div>
       </div>
 
-      <div className="grid grid-cols-1 gap-nl-md sm:grid-cols-2 lg:grid-cols-4">
-        <MetricCard
-          label="Aziende registrate"
-          value={String(registeredCompaniesCount)}
-          delta={NO_TREND_DELTA}
-          sparkline={NO_TREND_SPARKLINE}
-        />
-        <MetricCard
-          label="Clienti attivi"
-          value={String(activeClientsCount)}
-          delta={NO_TREND_DELTA}
-          sparkline={NO_TREND_SPARKLINE}
-        />
-        <MetricCard
-          label="Prospect in corso"
-          value={String(prospectsCount)}
-          delta={NO_TREND_DELTA}
-          sparkline={NO_TREND_SPARKLINE}
-        />
-        <MetricCard
-          label="Valore complessivo"
-          value={currencyFormatter.format(totalDealsValue)}
-          delta={NO_TREND_DELTA}
-          sparkline={NO_TREND_SPARKLINE}
-        />
+      <div className="min-h-0 flex-1 overflow-y-auto">
+        <CompaniesTable companies={companyRows} />
       </div>
-
-      <CompaniesTable companies={companyRows} />
     </div>
   );
 }

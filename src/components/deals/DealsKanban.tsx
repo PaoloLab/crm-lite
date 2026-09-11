@@ -96,7 +96,15 @@ function KanbanColumn({
         <span className="text-xs text-text-muted">{stateDeals.length}</span>
       </div>
 
-      <div className="flex flex-col gap-nl-xs">
+      {/* max-h approssimato (topbar + padding pagina + titolo + toggle vista +
+          header/bottone colonna): niente token esatto disponibile per uno
+          spazio che dipende da elementi fuori da questo componente, stesso
+          criterio delle altre dimensioni strutturali "una tantum" in
+          AGENTS.md. Overflow scoped qui (non su tutta l'area main) così a
+          scorrere quando una colonna è più lunga dello schermo è solo la
+          colonna, non l'intera board. Stile scrollbar globale, vedi
+          globals.css. */}
+      <div className="flex flex-col gap-nl-xs overflow-y-auto pr-nl-3xs max-h-[calc(100vh-22rem)]">
         {stateDeals.length === 0 && (
           <p className="px-nl-2xs text-xs text-text-muted">Nessuna trattativa.</p>
         )}

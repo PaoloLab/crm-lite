@@ -137,3 +137,35 @@ body {
   font-family: var(--font-sans);
   -webkit-font-smoothing: antialiased;
 }
+
+/* Scrollbar personalizzata, applicata globalmente (non a una classe opt-in):
+   quella di sistema è chiara/grossa e stona sul tema scuro, su qualunque
+   contenitore con overflow (area main degli elenchi Companies/Contacts/
+   Deals, pannello attività, colonne kanban, ecc.). scrollbar-width/
+   scrollbar-color (Firefox) sono proprietà ereditate: definirle su html
+   basta a coprire ogni discendente. ::-webkit-scrollbar (Chrome/Safari/Edge)
+   non è ereditato, quindi va sul selettore universale. Nessun fallback per
+   browser che non supportano nessuno dei due: degradano alla scrollbar di
+   sistema. */
+html {
+  scrollbar-width: thin;
+  scrollbar-color: var(--color-surface-3) transparent;
+}
+
+*::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+*::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+*::-webkit-scrollbar-thumb {
+  background-color: var(--color-surface-3);
+  border-radius: 999px;
+}
+
+*::-webkit-scrollbar-thumb:hover {
+  background-color: var(--color-text-muted);
+}

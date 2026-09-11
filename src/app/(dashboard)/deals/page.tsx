@@ -59,7 +59,7 @@ export default async function DealsPage() {
   }));
 
   return (
-    <div className="flex flex-col gap-nl-xl">
+    <div className="flex h-full flex-col gap-nl-xl">
       <TopbarAction>
         <NewDealButton
           contacts={contacts}
@@ -75,7 +75,12 @@ export default async function DealsPage() {
         <h1 className="font-display text-2xl font-medium text-text-primary">Trattative</h1>
       </div>
 
-      <DealsView deals={dealRows} dealStates={dealStateOptions} contacts={contacts} />
+      {/* DealsView riceve l'altezza residua della pagina: al suo interno tiene
+          fissi i tastini Kanban/Elenco e fa scorrere solo la vista attiva,
+          stesso pattern già usato in CompaniesPage. */}
+      <div className="min-h-0 flex-1">
+        <DealsView deals={dealRows} dealStates={dealStateOptions} contacts={contacts} />
+      </div>
     </div>
   );
 }

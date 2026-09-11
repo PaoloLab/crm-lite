@@ -29,6 +29,23 @@ export function DealsView({
   const [deals, setDeals] = useState(initialDeals);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
+  // Bug fix: React NON re-inizializza uno useState quando cambia la prop da
+  // cui è stato inizializzato (initialDeals) su un componente già montato.
+  // Senza questo, dopo router.refresh() (es. da NewDealButton dopo una
+  // creazione, o da revalidatePath su qualunque altra Server Action) la
+  // pagina server rifà la query con i dati aggiornati ma questo componente
+  // continuava a mostrare la sua copia locale ormai stale — da qui il bug
+  // "devo uscire e rientrare per vedere la nuova trattativa". Pattern
+  // "adjusting state during render" (non un useEffect): la regola
+  // react-hooks/set-state-in-effect del progetto vieta setState sincrono
+  // dentro un effect, ed eseguirlo durante il render invece che dopo evita
+  // comunque un giro di render in più rispetto a un useEffect equivalente.
+  const [prevInitialDeals, setPrevInitialDeals] = useState(initialDeals);
+  if (initialDeals !== prevInitialDeals) {
+    setPrevInitialDeals(initialDeals);
+    setDeals(initialDeals);
+  }
+
   // Auto-dismiss del banner errore: nessun pattern di notifica preesistente
   // nel progetto da riusare (vedi AGENTS.md), soluzione più semplice coerente
   // con lo stile esistente (stesse classi del banner errore login).
@@ -62,7 +79,9 @@ export function DealsView({
   }
 
   return (
-    <div className="flex flex-col gap-nl-lg">
+    <div className="flex h-full flex-col gap-nl-lg">
+      {/* Barra fissa (banner errore + toggle Kanban/Elenco): non scorre,
+          solo la vista sotto (Kanban o Elenco) ha il proprio scroll interno. */}
       {errorMessage && (
         <p
           role="alert"
@@ -84,16 +103,18 @@ export function DealsView({
         </Button>
       </div>
 
-      {view === 'kanban' ? (
-        <DealsKanban
-          deals={deals}
-          dealStates={dealStates}
-          contacts={contacts}
-          onDealStateChange={handleDealStateChange}
-        />
-      ) : (
-        <DealsTable deals={deals} dealStates={dealStates} onDealStateChange={handleDealStateChange} />
-      )}
+      <div className="min-h-0 flex-1 overflow-y-auto">
+        {view === 'kanban' ? (
+          <DealsKanban
+            deals={deals}
+            dealStates={dealStates}
+            contacts={contacts}
+            onDealStateChange={handleDealStateChange}
+          />
+        ) : (
+          <DealsTable deals={deals} dealStates={dealStates} onDealStateChange={handleDealStateChange} />
+        )}
+      </div>
     </div>
   );
 }

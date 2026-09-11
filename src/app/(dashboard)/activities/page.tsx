@@ -66,7 +66,7 @@ export default async function ActivitiesPage() {
   }));
 
   return (
-    <div className="flex flex-col gap-nl-xl">
+    <div className="flex h-full flex-col gap-nl-xl">
       <TopbarAction>
         <NewActivityButton deals={dealOptions} activityTypes={activityTypeOptions} />
       </TopbarAction>
@@ -75,7 +75,12 @@ export default async function ActivitiesPage() {
         <h1 className="font-display text-2xl font-medium text-text-primary">Attività</h1>
       </div>
 
-      <ActivitiesView activities={activityRows} deals={dealOptions} activityTypes={activityTypeOptions} />
+      {/* ActivitiesView riceve l'altezza residua della pagina: al suo interno
+          tiene fissi i filtri e fa scorrere solo l'elenco, stesso pattern
+          già usato in CompaniesPage/DealsView. */}
+      <div className="min-h-0 flex-1">
+        <ActivitiesView activities={activityRows} deals={dealOptions} activityTypes={activityTypeOptions} />
+      </div>
     </div>
   );
 }
