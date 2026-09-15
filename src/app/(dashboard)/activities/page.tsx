@@ -1,5 +1,5 @@
 import { prisma } from '@/lib/prisma';
-import { requireAuth } from '@/lib/authorization';
+import { requireAuth, ownRowsWhere } from '@/lib/authorization';
 import { TopbarAction } from '@/components/layout/TopbarAction';
 import { ActivitiesView } from '@/components/activities/ActivitiesView';
 import { NewActivityButton } from '@/components/activities/NewActivityButton';
@@ -18,14 +18,25 @@ function dealSubtitleOf(deal: { contact: { name: string; surname: string; compan
 }
 
 export default async function ActivitiesPage() {
-  await requireAuth();
+  const user = await requireAuth();
 
   // Dati per la lista attività: UNA SOLA query Prisma (activity.findMany) con
   // include di deal (+ contact/company annidati), user, activityType — nessuna
   // query per riga. dealStates/activityTypes/deals sono dati di supporto per i
   // filtri e il form di creazione (stesso principio già usato in DealsPage).
+  //
+  // Filtro per ruolo (ownRowsWhere): su activity.findMany filtra per
+  // Activity.userId, cioè "attività che ho svolto io" (l'esecutore, non il
+  // proprietario della deal collegata — vedi nota Activity.userId in
+  // AGENTS.md); un non-admin non vede quindi le attività svolte da altri
+  // colleghi, anche su una propria deal. Applicato anche a deals.findMany
+  // (le opzioni del select trattativa nel form di creazione), qui su
+  // Deal.userId: un non-admin deve poter scegliere solo tra le trattative
+  // che già vede in DealsPage, altrimenti il dropdown rivelerebbe
+  // l'esistenza di trattative altrui che la lista Trattative nasconde.
   const [activities, deals, activityTypes] = await Promise.all([
     prisma.activity.findMany({
+      where: ownRowsWhere(user),
       orderBy: { date: 'desc' },
       include: {
         deal: { include: { contact: { include: { company: { select: { name: true } } } } } },
@@ -34,6 +45,7 @@ export default async function ActivitiesPage() {
       },
     }),
     prisma.deal.findMany({
+      where: ownRowsWhere(user),
       orderBy: { title: 'asc' },
       include: { contact: { include: { company: { select: { name: true } } } } },
     }),

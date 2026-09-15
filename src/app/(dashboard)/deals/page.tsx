@@ -1,5 +1,5 @@
 import { prisma } from '@/lib/prisma';
-import { requireAuth } from '@/lib/authorization';
+import { requireAuth, ownRowsWhere } from '@/lib/authorization';
 import { TopbarAction } from '@/components/layout/TopbarAction';
 import { DealsView } from '@/components/deals/DealsView';
 import { NewDealButton } from '@/components/deals/NewDealButton';
@@ -13,7 +13,7 @@ function initialsOf(name: string, surname: string): string {
 }
 
 export default async function DealsPage() {
-  await requireAuth();
+  const user = await requireAuth();
 
   // Dati per la lista trattative: UNA SOLA query Prisma (deal.findMany) con
   // include di contact (+ company annidata), dealState, user — nessuna
@@ -21,14 +21,20 @@ export default async function DealsPage() {
   // annidati, ordinate per data DESC) per l'espansione riga della vista
   // Elenco, stesso principio "niente query per riga" già rispettato sopra.
   //
-  // dealStates/contacts sono invece dati di riferimento per il form di
-  // creazione (select) e per le colonne Kanban (che devono mostrare anche
-  // stati senza trattative, quindi non possono essere derivati dai risultati
-  // di deal.findMany): due query aggiuntive necessarie, stesso principio già
+  // Filtro per ruolo (ownRowsWhere): un non-admin vede solo le trattative di
+  // cui è proprietario (Deal.userId), l'admin le vede tutte — vedi nota
+  // "Autorizzazione basata sul ruolo" in AGENTS.md. dealStates/contacts
+  // restano NON filtrati: sono dati di riferimento per il form di creazione
+  // (select) e per le colonne Kanban (che devono mostrare anche stati senza
+  // trattative, quindi non possono essere derivati dai risultati di
+  // deal.findMany), due query aggiuntive necessarie, stesso principio già
   // usato in ContactsPage (contacts + companies via Promise.all) per i dati
-  // di supporto al form.
+  // di supporto al form. Contact resta comunque dato di team (nessun owner,
+  // vedi nota Contact in AGENTS.md), quindi la lista contatti per il select
+  // non va filtrata.
   const [deals, dealStates, contacts] = await Promise.all([
     prisma.deal.findMany({
+      where: ownRowsWhere(user),
       orderBy: { dateLastModified: 'desc' },
       include: {
         contact: { include: { company: { select: { name: true } } } },

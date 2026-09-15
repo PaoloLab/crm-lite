@@ -60,3 +60,18 @@ export async function requireAdmin(): Promise<SafeUser> {
 export function isAdmin(user: SafeUser): boolean {
   return user.role.level === ADMIN_ROLE_LEVEL;
 }
+
+/**
+ * Filtro Prisma "where" per la visibilità riga-per-riga su Deal/Activity:
+ * Admin vede tutto ({}), utente non-admin vede solo le proprie righe
+ * ({ userId }). Un solo helper per entrambi i modelli perché la regola è
+ * identica, anche se il significato di userId è diverso nei due casi — Deal
+ * (proprietario) vs Activity (esecutore), distinzione voluta e documentata
+ * in AGENTS.md. Da usare sia per i findMany di lettura sia dentro il `where`
+ * di update/delete nelle Server Action (mai fidarsi che la UI nasconda già
+ * le righe non proprie: un non-admin non deve poter scrivere su una riga che
+ * non gli appartiene, anche invocando l'azione direttamente).
+ */
+export function ownRowsWhere(user: SafeUser): { userId?: number } {
+  return isAdmin(user) ? {} : { userId: user.userId };
+}

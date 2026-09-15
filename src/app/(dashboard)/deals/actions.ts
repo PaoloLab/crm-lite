@@ -4,7 +4,7 @@ import { revalidatePath } from 'next/cache';
 import { Prisma } from '@prisma/client';
 import { z } from 'zod';
 import { prisma } from '@/lib/prisma';
-import { requireAuth } from '@/lib/authorization';
+import { requireAuth, ownRowsWhere } from '@/lib/authorization';
 
 // contactId e dealStateId sono entrambi obbligatori come da schema.prisma
 // (Deal.contactId/dealStateId non sono nullable, a differenza di
@@ -111,7 +111,7 @@ export async function updateDealState(
   dealId: number,
   dealStateId: number
 ): Promise<UpdateDealStateResult> {
-  await requireAuth();
+  const user = await requireAuth();
 
   const parsed = updateDealStateSchema.safeParse({ dealId, dealStateId });
   if (!parsed.success) {
@@ -119,8 +119,16 @@ export async function updateDealState(
   }
 
   try {
+    // where include ownRowsWhere(user): un non-admin non deve poter cambiare
+    // stato a una trattativa che non è sua, anche chiamando l'azione
+    // direttamente (la UI la nasconde già dalla lista, ma non basta — stesso
+    // principio "mai fidarsi solo della UI" di ogni altra Server Action del
+    // progetto). Se la riga non è sua, Prisma non la trova: stesso ramo
+    // P2025 già gestito sotto per una Deal davvero eliminata, nessuna
+    // distinzione nel messaggio (non serve rivelare a un non-admin che la
+    // trattativa esiste ma non è sua).
     await prisma.deal.update({
-      where: { dealId: parsed.data.dealId },
+      where: { dealId: parsed.data.dealId, ...ownRowsWhere(user) },
       data: { dealStateId: parsed.data.dealStateId },
     });
   } catch (error) {

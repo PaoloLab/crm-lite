@@ -4,7 +4,7 @@ import { revalidatePath } from 'next/cache';
 import { Prisma } from '@prisma/client';
 import { z } from 'zod';
 import { prisma } from '@/lib/prisma';
-import { requireAuth } from '@/lib/authorization';
+import { requireAuth, isAdmin } from '@/lib/authorization';
 
 // userId NON fa parte dello schema di validazione: non è un campo del form,
 // va preso da requireAuth() dentro la Server Action (stesso principio già
@@ -66,6 +66,25 @@ export async function createActivity(
       success: false,
       error: { fieldErrors: { date: ['Data o ora non valida.'] } },
     };
+  }
+
+  // Il dropdown trattativa in ActivitiesPage mostra già solo le deal proprie
+  // per un non-admin (vedi ownRowsWhere in activities/page.tsx), ma la UI da
+  // sola non basta: senza questo controllo un non-admin potrebbe comunque
+  // loggare un'attività su una dealId altrui chiamando l'azione direttamente
+  // con un dealId non presente nella sua UI. Un solo query aggiuntivo, solo
+  // per i non-admin (l'admin salta il controllo, nessun costo extra per lui).
+  if (!isAdmin(user)) {
+    const deal = await prisma.deal.findUnique({
+      where: { dealId: parsed.data.dealId },
+      select: { userId: true },
+    });
+    if (!deal || deal.userId !== user.userId) {
+      return {
+        success: false,
+        error: { formError: 'La trattativa selezionata non è più valida.' },
+      };
+    }
   }
 
   try {

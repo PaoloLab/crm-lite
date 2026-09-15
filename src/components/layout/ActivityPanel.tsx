@@ -1,6 +1,8 @@
 import { prisma } from '@/lib/prisma';
 import { Dot } from '@/components/ui';
 import { DEAL_STATE_COLOR, DEFAULT_DEAL_STATE_COLOR } from '@/components/deals/dealStateColors';
+import { ownRowsWhere } from '@/lib/authorization';
+import type { SafeUser } from '@/lib/session';
 
 // Tempo relativo minimale, nessuna libreria: copre i casi del design system
 // ("12 minuti fa", "1 ora fa", "ieri"). Non esiste altrove nel progetto
@@ -23,14 +25,35 @@ function formatRelativeTime(date: Date): string {
   return date.toLocaleDateString('it-IT', { day: '2-digit', month: '2-digit', year: 'numeric' });
 }
 
-export async function ActivityPanel() {
+// user arriva da (dashboard)/layout.tsx, che lo ha già letto una volta con
+// getCurrentUser() per la Topbar (vedi commento lì) — nessuna seconda query
+// di sessione qui. Può essere null (sessione non valida su un giro di
+// render prima del redirect della pagina): in quel caso non ha senso
+// interrogare il DB con un filtro ownRowsWhere privo di un utente reale, si
+// mostra semplicemente la sezione vuota.
+export async function ActivityPanel({ user }: { user: SafeUser | null }) {
+  if (!user) {
+    return (
+      <aside className="flex w-[300px] shrink-0 flex-col gap-nl-4xl overflow-y-auto border-l border-border-subtle bg-background-deep px-nl-xl py-nl-2xl">
+        <section className="flex flex-col gap-nl-sm">
+          <h2 className="text-label uppercase tracking-label text-text-muted">Attività recente</h2>
+        </section>
+      </aside>
+    );
+  }
+
   // Ultime 4 attività per data, con l'esecutore (User) e lo stato ATTUALE
   // della deal collegata (Deal -> DealState) per colorare il pallino — non
   // uno storico dello stato al momento dell'attività, che il progetto non
   // traccia. Colore riusa DEAL_STATE_COLOR (dealStateColors.ts, già chiave su
   // DealState.code): stessa mappatura semantica richiesta per slug
   // (nuovo/proposta/vinto/perso), niente da duplicare.
+  //
+  // Filtro per ruolo (ownRowsWhere su Activity.userId, l'esecutore): un
+  // non-admin vede qui solo le attività svolte da sé stesso, stesso criterio
+  // già applicato in activities/page.tsx.
   const activities = await prisma.activity.findMany({
+    where: ownRowsWhere(user),
     orderBy: { date: 'desc' },
     take: 4,
     include: {

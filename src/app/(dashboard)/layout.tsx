@@ -10,7 +10,11 @@ import { getCurrentUser } from '@/lib/session';
 // requireAuth()/requireAdmin() nelle singole pagine, come per il resto del
 // progetto — questo layout è puro guscio visivo. Usa getCurrentUser() (non
 // requireAuth()) solo per leggere i dati da mostrare nel menu utente della
-// Topbar: nessun redirect qui, ogni pagina protegge già se stessa.
+// Topbar: nessun redirect qui, ogni pagina protegge già se stessa. Lo stesso
+// user viene passato anche ad ActivityPanel (che ne ha bisogno per il filtro
+// per ruolo sulle attività recenti, vedi ActivityPanel.tsx) invece di fargli
+// chiamare una seconda getCurrentUser(): un'unica query di sessione per
+// request, non una per componente.
 export default async function DashboardLayout({ children }: { children: ReactNode }) {
   const user = await getCurrentUser();
 
@@ -22,7 +26,7 @@ export default async function DashboardLayout({ children }: { children: ReactNod
           <Topbar user={user ?? { name: '?', surname: '', username: '' }} />
           <main className="flex-1 overflow-y-auto px-nl-3xl py-nl-4xl">{children}</main>
         </div>
-        <ActivityPanel />
+        <ActivityPanel user={user} />
       </div>
     </TopbarActionProvider>
   );
