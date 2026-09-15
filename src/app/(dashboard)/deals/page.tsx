@@ -5,12 +5,21 @@ import { DealsView } from '@/components/deals/DealsView';
 import { NewDealButton } from '@/components/deals/NewDealButton';
 import type { DealRowData } from '@/components/deals/DealsTable';
 
+// Stessa firma già usata in activities/page.tsx per l'avatar iniziali —
+// duplicata qui invece di condivisa: nessun modulo di utility comuni nel
+// progetto, ogni file definisce i propri piccoli helper (vedi AGENTS.md).
+function initialsOf(name: string, surname: string): string {
+  return `${name.charAt(0)}${surname.charAt(0)}`.toUpperCase();
+}
+
 export default async function DealsPage() {
   await requireAuth();
 
   // Dati per la lista trattative: UNA SOLA query Prisma (deal.findMany) con
   // include di contact (+ company annidata), dealState, user — nessuna
-  // query per riga.
+  // query per riga. Include anche le activities collegate (+ user/activityType
+  // annidati, ordinate per data DESC) per l'espansione riga della vista
+  // Elenco, stesso principio "niente query per riga" già rispettato sopra.
   //
   // dealStates/contacts sono invece dati di riferimento per il form di
   // creazione (select) e per le colonne Kanban (che devono mostrare anche
@@ -25,6 +34,13 @@ export default async function DealsPage() {
         contact: { include: { company: { select: { name: true } } } },
         dealState: true,
         user: { select: { name: true, surname: true } },
+        activities: {
+          orderBy: { date: 'desc' },
+          include: {
+            user: { select: { name: true, surname: true } },
+            activityType: true,
+          },
+        },
       },
     }),
     prisma.dealState.findMany({ orderBy: { sequence: 'asc' } }),
@@ -50,6 +66,15 @@ export default async function DealsPage() {
     contactName: `${deal.contact.name} ${deal.contact.surname}`,
     companyName: deal.contact.company?.name ?? null,
     dateLastModified: deal.dateLastModified,
+    activities: deal.activities.map((activity) => ({
+      activityId: activity.activityId,
+      description: activity.description,
+      date: activity.date,
+      activityTypeCode: activity.activityType.code,
+      activityTypeLabel: activity.activityType.label,
+      userName: `${activity.user.name} ${activity.user.surname}`,
+      userInitials: initialsOf(activity.user.name, activity.user.surname),
+    })),
   }));
 
   const dealStateOptions = dealStates.map((state) => ({

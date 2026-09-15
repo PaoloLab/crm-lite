@@ -3,8 +3,9 @@
 import { Bell, Search } from 'lucide-react';
 import { Dot, Input } from '@/components/ui';
 import { useTopbarAction } from './TopbarAction';
+import { UserMenu, type UserMenuUser } from './UserMenu';
 
-export function Topbar() {
+export function Topbar({ user }: { user: UserMenuUser }) {
   const action = useTopbarAction();
 
   return (
@@ -32,11 +33,7 @@ export function Topbar() {
           </span>
         </button>
 
-        {/* Avatar con iniziali statiche: la sessione reale non è ancora
-            collegata a questo shell, vedi riepilogo. */}
-        <span className="flex size-[34px] items-center justify-center rounded-full border border-border bg-surface-3 text-xs font-semibold text-text-primary">
-          MR
-        </span>
+        <UserMenu user={user} />
       </div>
     </header>
   );

@@ -2,6 +2,26 @@
 
 import { Dot, Table, type TableColumn } from '@/components/ui';
 import { DEAL_STATE_COLOR, DEFAULT_DEAL_STATE_COLOR } from './dealStateColors';
+// Nota discrepanza richiesta: i 3 ActivityType.code seedati sono
+// "CALL"/"EMAIL"/"MEETING" (prisma/seed.ts), non "chiamata"/"email"/"meeting"
+// (le label italiane sono invece "Chiamata"/"Email"/"Meeting"). Riuso la
+// mappatura icona+colore già esistente in ActivitiesTable — stesso criterio
+// chiamata→primary+Phone / email→warning+Mail / meeting→success+Users
+// richiesto, solo con le chiavi reali — invece di duplicarla qui.
+import {
+  ACTIVITY_TYPE_STYLE,
+  DEFAULT_ACTIVITY_TYPE_STYLE,
+} from '@/components/activities/activityTypeStyle';
+
+export interface DealActivityRowData {
+  activityId: number;
+  description: string;
+  date: Date;
+  activityTypeCode: string;
+  activityTypeLabel: string;
+  userName: string;
+  userInitials: string;
+}
 
 export interface DealRowData {
   dealId: number;
@@ -13,6 +33,8 @@ export interface DealRowData {
   contactName: string;
   companyName: string | null;
   dateLastModified: Date;
+  /** Ordinate per data DESC dal chiamante (page.tsx), la più recente in cima. */
+  activities: DealActivityRowData[];
 }
 
 // Stessa forma di DealsKanbanState (DealsKanban.tsx): duplicata qui invece di
@@ -31,6 +53,69 @@ const dateFormatter = new Intl.DateTimeFormat('it-IT', {
   month: '2-digit',
   year: 'numeric',
 });
+
+// Formato "08 set 2026 · ore 10:30" per le attività della riga espansa: stessi
+// due Intl.DateTimeFormat già usati in ActivitiesTable (day/month short/year +
+// ore:minuti), ma uniti in un'unica stringa con " · ore " invece che su due
+// righe separate — qui lo spazio orizzontale nella riga attività lo consente.
+const activityDateFormatter = new Intl.DateTimeFormat('it-IT', {
+  day: '2-digit',
+  month: 'short',
+  year: 'numeric',
+});
+const activityTimeFormatter = new Intl.DateTimeFormat('it-IT', {
+  hour: '2-digit',
+  minute: '2-digit',
+});
+
+function formatActivityDateTime(date: Date): string {
+  return `${activityDateFormatter.format(date)} · ore ${activityTimeFormatter.format(date)}`;
+}
+
+function renderExpandedDeal(row: DealRowData) {
+  return (
+    <div className="col-span-4 flex flex-col gap-nl-lg">
+      <span className="text-label uppercase tracking-label text-text-muted">
+        Attività collegate · ordine cronologico
+      </span>
+
+      {row.activities.length === 0 ? (
+        <span className="text-body text-text-muted">
+          Nessuna attività registrata su questa trattativa.
+        </span>
+      ) : (
+        <div className="flex flex-col gap-nl-lg">
+          {row.activities.map((activity) => {
+            const style = ACTIVITY_TYPE_STYLE[activity.activityTypeCode] ?? DEFAULT_ACTIVITY_TYPE_STYLE;
+            const Icon = style.icon;
+            return (
+              <div key={activity.activityId} className="flex flex-col gap-nl-2xs">
+                <span className="flex items-center gap-nl-2xs text-body">
+                  <Icon size={15} strokeWidth={1.8} className={style.textClass} />
+                  <span className={['font-medium', style.textClass].join(' ')}>
+                    {activity.activityTypeLabel}
+                  </span>
+                  <span className="text-tag text-text-muted">
+                    {formatActivityDateTime(activity.date)}
+                  </span>
+                </span>
+
+                <span className="text-body text-text-secondary">{activity.description}</span>
+
+                <span className="flex items-center gap-nl-2xs">
+                  <span className="flex size-[24px] shrink-0 items-center justify-center rounded-full border border-border bg-surface-3 text-tag font-semibold text-text-primary">
+                    {activity.userInitials}
+                  </span>
+                  <span className="text-tag text-text-muted">{activity.userName}</span>
+                </span>
+              </div>
+            );
+          })}
+        </div>
+      )}
+    </div>
+  );
+}
 
 // Stesso stile del select nativo di DealForm (nessun componente Select in
 // components/ui/), ma più compatto (padding ridotto) per stare dentro una
@@ -125,5 +210,12 @@ export function DealsTable({
     return <p className="text-body text-text-secondary">Nessuna trattativa registrata.</p>;
   }
 
-  return <Table columns={columns} rows={deals} rowKey={(row) => row.dealId} />;
+  return (
+    <Table
+      columns={columns}
+      rows={deals}
+      rowKey={(row) => row.dealId}
+      renderExpanded={renderExpandedDeal}
+    />
+  );
 }

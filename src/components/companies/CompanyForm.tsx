@@ -3,6 +3,7 @@
 import { useActionState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import type { Company } from '@prisma/client';
+import { Button, Input } from '@/components/ui';
 import {
   createCompany,
   updateCompany,
@@ -34,46 +35,55 @@ export function CompanyForm({
   }, [state.success, onSuccess, router]);
 
   return (
-    <form action={formAction} className="flex max-w-md flex-col gap-4">
-      <div className="flex flex-col gap-1">
-        <label htmlFor="name">Nome</label>
-        <input id="name" name="name" defaultValue={defaultValues?.name} required />
+    <form action={formAction} className="flex max-w-md flex-col gap-nl-md">
+      <div className="flex flex-col gap-nl-3xs">
+        <Input label="Nome" id="name" name="name" defaultValue={defaultValues?.name} required />
         {state.error?.fieldErrors?.name?.map((message) => (
-          <p key={message} role="alert" className="text-sm text-red-600">
+          <p key={message} role="alert" className="text-sm text-danger">
             {message}
           </p>
         ))}
       </div>
 
-      <div className="flex flex-col gap-1">
-        <label htmlFor="address">Indirizzo</label>
-        <input id="address" name="address" defaultValue={defaultValues?.address} required />
+      <div className="flex flex-col gap-nl-3xs">
+        <Input
+          label="Indirizzo"
+          id="address"
+          name="address"
+          defaultValue={defaultValues?.address}
+          required
+        />
         {state.error?.fieldErrors?.address?.map((message) => (
-          <p key={message} role="alert" className="text-sm text-red-600">
+          <p key={message} role="alert" className="text-sm text-danger">
             {message}
           </p>
         ))}
       </div>
 
-      <div className="flex flex-col gap-1">
-        <label htmlFor="piva">Partita IVA</label>
-        <input id="piva" name="piva" defaultValue={defaultValues?.piva} required />
+      <div className="flex flex-col gap-nl-3xs">
+        <Input
+          label="Partita IVA"
+          id="piva"
+          name="piva"
+          defaultValue={defaultValues?.piva}
+          required
+        />
         {state.error?.fieldErrors?.piva?.map((message) => (
-          <p key={message} role="alert" className="text-sm text-red-600">
+          <p key={message} role="alert" className="text-sm text-danger">
             {message}
           </p>
         ))}
       </div>
 
       {state.error?.formError && (
-        <p role="alert" className="text-sm text-red-600">
+        <p role="alert" className="text-sm text-danger">
           {state.error.formError}
         </p>
       )}
 
-      <button type="submit" disabled={pending}>
+      <Button type="submit" disabled={pending}>
         {pending ? 'Salvataggio...' : defaultValues ? 'Salva modifiche' : 'Crea azienda'}
-      </button>
+      </Button>
     </form>
   );
 }

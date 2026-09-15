@@ -1,7 +1,6 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { Button } from '@/components/ui';
 import { updateDealState } from '@/app/(dashboard)/deals/actions';
 import { DealsTable, type DealRowData } from './DealsTable';
 import { DealsKanban, type DealsKanbanState } from './DealsKanban';
@@ -25,7 +24,7 @@ export function DealsView({
   dealStates: DealsKanbanState[];
   contacts: DealFormContactOption[];
 }) {
-  const [view, setView] = useState<ViewMode>('kanban');
+  const [view, setView] = useState<ViewMode>('list');
   const [deals, setDeals] = useState(initialDeals);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
@@ -91,16 +90,39 @@ export function DealsView({
         </p>
       )}
 
-      <div className="flex gap-nl-2xs">
-        <Button
-          variant={view === 'kanban' ? 'primary' : 'secondary'}
-          onClick={() => setView('kanban')}
-        >
-          Kanban
-        </Button>
-        <Button variant={view === 'list' ? 'primary' : 'secondary'} onClick={() => setView('list')}>
-          Elenco
-        </Button>
+      <div className="flex justify-end">
+        {/* Segmented control (stile tab "Tutte/Clienti/Prospect/Inattive" del
+            mockup Companies): container con bordo, tab attiva come pillola
+            interna senza spazio tra le voci, invece dei due Button separati
+            usati in precedenza. */}
+        <div className="inline-flex items-center rounded-pill border border-border bg-surface-1 p-nl-5xs">
+          <button
+            type="button"
+            onClick={() => setView('list')}
+            aria-pressed={view === 'list'}
+            className={[
+              'rounded-pill px-nl-sm py-nl-4xs text-ui font-sans font-semibold transition-colors',
+              view === 'list'
+                ? 'bg-surface-3 text-text-primary'
+                : 'text-text-secondary hover:text-text-primary',
+            ].join(' ')}
+          >
+            Elenco
+          </button>
+          <button
+            type="button"
+            onClick={() => setView('kanban')}
+            aria-pressed={view === 'kanban'}
+            className={[
+              'rounded-pill px-nl-sm py-nl-4xs text-ui font-sans font-semibold transition-colors',
+              view === 'kanban'
+                ? 'bg-surface-3 text-text-primary'
+                : 'text-text-secondary hover:text-text-primary',
+            ].join(' ')}
+          >
+            Kanban
+          </button>
+        </div>
       </div>
 
       <div className="min-h-0 flex-1 overflow-y-auto">
