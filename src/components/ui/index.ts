@@ -21,3 +21,6 @@ export type { TableColumn, TableProps } from './Table';
 
 export { Modal } from './Modal';
 export type { ModalProps } from './Modal';
+
+export { Select } from './Select';
+export type { SelectOption, SelectProps } from './Select';

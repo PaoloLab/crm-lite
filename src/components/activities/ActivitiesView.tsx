@@ -2,16 +2,13 @@
 
 import { useMemo, useState } from 'react';
 import { Search } from 'lucide-react';
-import { Button, Input } from '@/components/ui';
+import { Button, Input, Select } from '@/components/ui';
 import { ActivitiesTable, type ActivityRowData } from './ActivitiesTable';
 import type { ActivityFormDealOption, ActivityFormTypeOption } from './ActivityForm';
 
 type SortOrder = 'recent' | 'oldest';
 const TYPE_FILTER_ALL = 'ALL';
 const DEAL_FILTER_ALL = 'ALL';
-
-const SELECT_CLASSES =
-  'rounded-control border border-border bg-surface-2 py-nl-control-y pl-nl-sm pr-nl-sm text-ui text-text-primary focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary';
 
 // Client Component che possiede tutto lo stato dei filtri: i dati arrivano
 // già pronti (e già ordinati per data desc) da app/(dashboard)/activities/page.tsx
@@ -86,19 +83,24 @@ export function ActivitiesView({
             ))}
           </div>
 
-          <select
-            className={SELECT_CLASSES}
-            value={dealFilter}
-            onChange={(event) => setDealFilter(event.target.value)}
-            aria-label="Filtra per trattativa"
-          >
-            <option value={DEAL_FILTER_ALL}>Tutte le trattative</option>
-            {deals.map((deal) => (
-              <option key={deal.dealId} value={deal.dealId}>
-                {deal.title} — {deal.subtitle}
-              </option>
-            ))}
-          </select>
+          <div className="w-[240px]">
+            <Select
+              aria-label="Filtra per trattativa"
+              value={dealFilter}
+              onChange={setDealFilter}
+              options={[
+                { value: DEAL_FILTER_ALL, label: 'Tutte le trattative' },
+                ...deals.map((deal) => ({
+                  value: String(deal.dealId),
+                  label: (
+                    <>
+                      {deal.title} <span className="text-text-muted">— {deal.subtitle}</span>
+                    </>
+                  ),
+                })),
+              ]}
+            />
+          </div>
         </div>
 
         <div className="flex items-center gap-nl-sm">
