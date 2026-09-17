@@ -1,6 +1,6 @@
 import Link from 'next/link';
 import { prisma } from '@/lib/prisma';
-import { requireAuth } from '@/lib/authorization';
+import { requireAuth, isAdmin, ownRowsWhere } from '@/lib/authorization';
 import { MetricCard, Badge, Dot, type DotColor } from '@/components/ui';
 import { DEAL_STATE_COLOR, DEFAULT_DEAL_STATE_COLOR } from '@/components/deals/dealStateColors';
 import { PipelineTrendChart, type PipelineTrendPoint } from '@/components/dashboard/PipelineTrendChart';
@@ -54,7 +54,8 @@ function initials(name: string): string {
 }
 
 export default async function DashboardPage() {
-  await requireAuth();
+  const user = await requireAuth();
+  const admin = isAdmin(user);
 
   // Ogni metrica è calcolata su tutti i dati presenti nel DB, nessun filtro
   // periodo (requisito esplicito, nessun toggle Mese/Trimestre/Anno). Le
@@ -78,15 +79,19 @@ export default async function DashboardPage() {
   ] = await Promise.all([
     prisma.deal.aggregate({
       _sum: { value: true },
-      where: { dealState: { code: { notIn: [WON_CODE, LOST_CODE] } } },
+      where: { ...ownRowsWhere(user), dealState: { code: { notIn: [WON_CODE, LOST_CODE] } } },
     }),
     prisma.deal.aggregate({
       _sum: { value: true },
-      where: { dealState: { code: WON_CODE } },
+      where: { ...ownRowsWhere(user), dealState: { code: WON_CODE } },
     }),
-    prisma.deal.count({ where: { dealState: { code: WON_CODE } } }),
-    prisma.deal.count({ where: { dealState: { code: LOST_CODE } } }),
-    prisma.deal.aggregate({ _avg: { value: true }, _count: { _all: true } }),
+    prisma.deal.count({ where: { ...ownRowsWhere(user), dealState: { code: WON_CODE } } }),
+    prisma.deal.count({ where: { ...ownRowsWhere(user), dealState: { code: LOST_CODE } } }),
+    prisma.deal.aggregate({
+      _avg: { value: true },
+      _count: { _all: true },
+      where: ownRowsWhere(user),
+    }),
     // "Pipeline per fase" replica la logica del mockup approvato: include lo
     // stato "Vinto" (è l'ultimo stadio del funnel), esclude solo "Perso" (è
     // un'uscita dal funnel, non uno stadio).
@@ -94,26 +99,41 @@ export default async function DashboardPage() {
       where: { code: { not: LOST_CODE } },
       orderBy: { sequence: 'asc' },
     }),
-    prisma.deal.groupBy({ by: ['dealStateId'], _sum: { value: true }, _count: { _all: true } }),
+    prisma.deal.groupBy({
+      by: ['dealStateId'],
+      _sum: { value: true },
+      _count: { _all: true },
+      where: ownRowsWhere(user),
+    }),
+    // "Aziende per valore": per un non-admin, il valore per azienda riflette
+    // solo le proprie trattative (ownRowsWhere sul Deal.userId annidato), non
+    // il totale generato da tutti i venditori — un'azienda senza proprie
+    // trattative sparisce dalla classifica (filtro value > 0 più sotto).
     prisma.company.findMany({
       select: {
         companyId: true,
         name: true,
-        contacts: { select: { deals: { select: { value: true } } } },
+        contacts: { select: { deals: { where: ownRowsWhere(user), select: { value: true } } } },
       },
     }),
-    prisma.user.findMany({
-      select: {
-        userId: true,
-        name: true,
-        surname: true,
-        deals: {
-          where: { dealState: { code: { notIn: [WON_CODE, LOST_CODE] } } },
-          select: { value: true },
-        },
-      },
-    }),
+    // "Squadra commerciale" è per natura un confronto tra utenti: per un
+    // non-admin non ha senso (mostrerebbe una sola riga), quindi la card
+    // resta nascosta lato JSX e qui evitiamo del tutto la query.
+    admin
+      ? prisma.user.findMany({
+          select: {
+            userId: true,
+            name: true,
+            surname: true,
+            deals: {
+              where: { dealState: { code: { notIn: [WON_CODE, LOST_CODE] } } },
+              select: { value: true },
+            },
+          },
+        })
+      : Promise.resolve([]),
     prisma.deal.findMany({
+      where: ownRowsWhere(user),
       select: {
         value: true,
         dateCreation: true,
@@ -332,7 +352,9 @@ export default async function DashboardPage() {
       </div>
 
       <div className="grid grid-cols-1 gap-nl-md lg:grid-cols-2">
-        <div className="flex flex-col gap-nl-lg rounded-card border border-border-subtle bg-surface-1 p-nl-xl">
+        <div
+          className={`flex flex-col gap-nl-lg rounded-card border border-border-subtle bg-surface-1 p-nl-xl ${admin ? '' : 'lg:col-span-2'}`}
+        >
           <h2 className="text-body font-medium text-text-primary">Aziende per valore</h2>
           <div className="flex flex-col gap-nl-md">
             {companyRows.map((row) => (
@@ -362,30 +384,32 @@ export default async function DashboardPage() {
           </div>
         </div>
 
-        <div className="flex flex-col gap-nl-lg rounded-card border border-border-subtle bg-surface-1 p-nl-xl">
-          <h2 className="text-body font-medium text-text-primary">Squadra commerciale</h2>
-          <div className="flex flex-col gap-nl-md">
-            {teamRows.map((row) => (
-              <div key={row.id} className="flex items-center gap-nl-sm">
-                <span className="flex size-[34px] shrink-0 items-center justify-center rounded-full bg-surface-3 text-xs font-medium text-text-secondary">
-                  {initials(row.name)}
-                </span>
-                <div className="flex min-w-0 flex-1 flex-col">
-                  <span className="truncate text-body text-text-primary">{row.name}</span>
-                  <span className="text-xs text-text-muted">
-                    {row.count} {row.count === 1 ? 'trattativa attiva' : 'trattative attive'}
+        {admin && (
+          <div className="flex flex-col gap-nl-lg rounded-card border border-border-subtle bg-surface-1 p-nl-xl">
+            <h2 className="text-body font-medium text-text-primary">Squadra commerciale</h2>
+            <div className="flex flex-col gap-nl-md">
+              {teamRows.map((row) => (
+                <div key={row.id} className="flex items-center gap-nl-sm">
+                  <span className="flex size-[34px] shrink-0 items-center justify-center rounded-full bg-surface-3 text-xs font-medium text-text-secondary">
+                    {initials(row.name)}
+                  </span>
+                  <div className="flex min-w-0 flex-1 flex-col">
+                    <span className="truncate text-body text-text-primary">{row.name}</span>
+                    <span className="text-xs text-text-muted">
+                      {row.count} {row.count === 1 ? 'trattativa attiva' : 'trattative attive'}
+                    </span>
+                  </div>
+                  <span className="shrink-0 font-mono text-body text-text-primary">
+                    {currencyFormatter.format(row.value)}
                   </span>
                 </div>
-                <span className="shrink-0 font-mono text-body text-text-primary">
-                  {currencyFormatter.format(row.value)}
-                </span>
-              </div>
-            ))}
-            {teamRows.length === 0 && (
-              <p className="text-xs text-text-muted">Nessuna trattativa attiva.</p>
-            )}
+              ))}
+              {teamRows.length === 0 && (
+                <p className="text-xs text-text-muted">Nessuna trattativa attiva.</p>
+              )}
+            </div>
           </div>
-        </div>
+        )}
       </div>
     </div>
   );
