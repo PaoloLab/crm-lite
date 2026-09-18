@@ -19,10 +19,13 @@ export function DealsView({
   deals: initialDeals,
   dealStates,
   contacts,
+  currentUserName,
 }: {
   deals: DealRowData[];
   dealStates: DealsKanbanState[];
   contacts: DealFormContactOption[];
+  /** Passato solo a DealsTable: AttachmentsModal lo usa per attribuire subito in UI un allegato appena caricato. DealsKanban non gestisce Allegati in questo step. */
+  currentUserName: string;
 }) {
   const [view, setView] = useState<ViewMode>('list');
   const [deals, setDeals] = useState(initialDeals);
@@ -134,7 +137,12 @@ export function DealsView({
             onDealStateChange={handleDealStateChange}
           />
         ) : (
-          <DealsTable deals={deals} dealStates={dealStates} onDealStateChange={handleDealStateChange} />
+          <DealsTable
+            deals={deals}
+            dealStates={dealStates}
+            onDealStateChange={handleDealStateChange}
+            currentUserName={currentUserName}
+          />
         )}
       </div>
     </div>

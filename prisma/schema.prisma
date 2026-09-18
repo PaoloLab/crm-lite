@@ -32,6 +32,8 @@ model User {
 
   sessions Session[]
 
+  attachments Attachment[]
+
   @@map("users")
 }
 
@@ -55,6 +57,8 @@ model Contact {
   company   Company? @relation(fields: [companyId], references: [companyId])
 
   deals Deal[]
+
+  attachments Attachment[]
 
   @@map("contacts")
 }
@@ -88,6 +92,8 @@ model Deal {
   contact   Contact @relation(fields: [contactId], references: [contactId])
 
   activities Activity[]
+
+  attachments Attachment[]
 
   @@map("deals")
 }
@@ -125,4 +131,24 @@ model Session {
   userId       Int
   expires      DateTime
   user         User     @relation(fields: [userId], references: [userId], onDelete: Cascade)
+}
+
+model Attachment {
+  attachmentId Int      @id @default(autoincrement())
+  storageKey   String   @unique
+  fileName     String
+  mimeType     String
+  fileSize     Int
+  dateCreated  DateTime @default(now())
+
+  dealId Int?
+  deal   Deal? @relation(fields: [dealId], references: [dealId])
+
+  contactId Int?
+  contact   Contact? @relation(fields: [contactId], references: [contactId])
+
+  uploadedByUserId Int
+  uploadedByUser   User @relation(fields: [uploadedByUserId], references: [userId])
+
+  @@map("attachments")
 }

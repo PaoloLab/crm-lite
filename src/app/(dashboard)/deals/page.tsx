@@ -20,6 +20,11 @@ export default async function DealsPage() {
   // query per riga. Include anche le activities collegate (+ user/activityType
   // annidati, ordinate per data DESC) per l'espansione riga della vista
   // Elenco, stesso principio "niente query per riga" già rispettato sopra.
+  // Stesso principio anche per attachments (+ uploadedByUser annidato,
+  // ordinati per data DESC): sia il conteggio sulla graffetta sia la lista
+  // completa nel modale vengono da questa unica riga già caricata, nessuna
+  // query aggiuntiva quando si apre il modale (stesso pattern già usato da
+  // CompaniesPage per l'aggregazione Deal/Activity, vedi AGENTS.md).
   //
   // Filtro per ruolo (ownRowsWhere): un non-admin vede solo le trattative di
   // cui è proprietario (Deal.userId), l'admin le vede tutte — vedi nota
@@ -45,6 +50,12 @@ export default async function DealsPage() {
           include: {
             user: { select: { name: true, surname: true } },
             activityType: true,
+          },
+        },
+        attachments: {
+          orderBy: { dateCreated: 'desc' },
+          include: {
+            uploadedByUser: { select: { name: true, surname: true } },
           },
         },
       },
@@ -81,6 +92,14 @@ export default async function DealsPage() {
       userName: `${activity.user.name} ${activity.user.surname}`,
       userInitials: initialsOf(activity.user.name, activity.user.surname),
     })),
+    attachments: deal.attachments.map((attachment) => ({
+      attachmentId: attachment.attachmentId,
+      fileName: attachment.fileName,
+      fileSize: attachment.fileSize,
+      mimeType: attachment.mimeType,
+      dateCreated: attachment.dateCreated,
+      uploadedByName: `${attachment.uploadedByUser.name} ${attachment.uploadedByUser.surname}`,
+    })),
   }));
 
   const dealStateOptions = dealStates.map((state) => ({
@@ -110,7 +129,12 @@ export default async function DealsPage() {
           fissi i tastini Kanban/Elenco e fa scorrere solo la vista attiva,
           stesso pattern già usato in CompaniesPage. */}
       <div className="min-h-0 flex-1">
-        <DealsView deals={dealRows} dealStates={dealStateOptions} contacts={contacts} />
+        <DealsView
+          deals={dealRows}
+          dealStates={dealStateOptions}
+          contacts={contacts}
+          currentUserName={`${user.name} ${user.surname}`}
+        />
       </div>
     </div>
   );

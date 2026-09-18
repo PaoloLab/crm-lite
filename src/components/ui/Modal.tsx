@@ -10,12 +10,25 @@ export interface ModalProps {
   children: ReactNode;
   /** Slot per i bottoni azione (es. Annulla + submit). Opzionale. */
   footer?: ReactNode;
+  /**
+   * 'md' (default, 480px): dialoghi di conferma/form brevi, il caso d'uso
+   * originale del componente (es. NewCompanyButton). 'lg' (640px): contenuti
+   * più ricchi che non ci starebbero a 480px senza andare a capo su ogni
+   * riga — introdotto per la lista allegati di AttachmentsModal (icona +
+   * nome file + dimensione + autore + data + azioni per riga).
+   */
+  size?: 'md' | 'lg';
 }
+
+const SIZE_MAX_WIDTH_CLASSES: Record<'md' | 'lg', string> = {
+  md: 'max-w-[min(480px,90vw)]',
+  lg: 'max-w-[min(640px,90vw)]',
+};
 
 const FOCUSABLE_SELECTOR =
   'a[href], button:not([disabled]), textarea:not([disabled]), input:not([disabled]), select:not([disabled]), [tabindex]:not([tabindex="-1"])';
 
-export function Modal({ open, onClose, title, children, footer }: ModalProps) {
+export function Modal({ open, onClose, title, children, footer, size = 'md' }: ModalProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const titleId = useId();
 
@@ -75,7 +88,10 @@ export function Modal({ open, onClose, title, children, footer }: ModalProps) {
         role="dialog"
         aria-modal="true"
         aria-labelledby={title ? titleId : undefined}
-        className="w-full max-w-[min(480px,90vw)] rounded-modal border border-border-subtle bg-surface-1 p-nl-3xl shadow-modal"
+        className={[
+          'w-full rounded-modal border border-border-subtle bg-surface-1 p-nl-3xl shadow-modal',
+          SIZE_MAX_WIDTH_CLASSES[size],
+        ].join(' ')}
       >
         {title && (
           <h2 id={titleId} className="mb-nl-md font-display text-[26px] font-medium text-text-primary">

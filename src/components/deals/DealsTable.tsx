@@ -1,7 +1,10 @@
 'use client';
 
+import { useState } from 'react';
+import { Paperclip } from 'lucide-react';
 import { Dot, Table, type TableColumn } from '@/components/ui';
 import { DEAL_STATE_COLOR, DEFAULT_DEAL_STATE_COLOR } from './dealStateColors';
+import { AttachmentsModal } from './AttachmentsModal';
 // Nota discrepanza richiesta: i 3 ActivityType.code seedati sono
 // "CALL"/"EMAIL"/"MEETING" (prisma/seed.ts), non "chiamata"/"email"/"meeting"
 // (le label italiane sono invece "Chiamata"/"Email"/"Meeting"). Riuso la
@@ -23,6 +26,15 @@ export interface DealActivityRowData {
   userInitials: string;
 }
 
+export interface AttachmentRowData {
+  attachmentId: number;
+  fileName: string;
+  fileSize: number;
+  mimeType: string;
+  dateCreated: Date;
+  uploadedByName: string;
+}
+
 export interface DealRowData {
   dealId: number;
   title: string;
@@ -35,6 +47,8 @@ export interface DealRowData {
   dateLastModified: Date;
   /** Ordinate per data DESC dal chiamante (page.tsx), la più recente in cima. */
   activities: DealActivityRowData[];
+  /** Ordinati per data DESC dal chiamante (page.tsx), il più recente in cima. */
+  attachments: AttachmentRowData[];
 }
 
 // Stessa forma di DealsKanbanState (DealsKanban.tsx): duplicata qui invece di
@@ -127,12 +141,22 @@ export function DealsTable({
   deals,
   dealStates,
   onDealStateChange,
+  currentUserName,
 }: {
   deals: DealRowData[];
   /** Tutti i DealState disponibili, ordinate per sequence dal chiamante (page.tsx). */
   dealStates: DealStageOption[];
   onDealStateChange: (dealId: number, dealStateId: number) => void;
+  /** Nome+cognome dell'utente corrente: usato da AttachmentsModal per attribuire subito in UI un allegato appena caricato, senza attendere router.refresh(). */
+  currentUserName: string;
 }) {
+  // Un solo modale condiviso da tutte le righe (non uno per riga): la Deal
+  // "attiva" si cerca in deals per id ad ogni render, così se router.refresh()
+  // porta dati aggiornati mentre il modale è aperto (vedi AttachmentsModal)
+  // anche dealTitle/dealSubtitle restano coerenti con la riga vera.
+  const [attachmentsDealId, setAttachmentsDealId] = useState<number | null>(null);
+  const attachmentsDeal = deals.find((deal) => deal.dealId === attachmentsDealId) ?? null;
+
   const columns: TableColumn<DealRowData>[] = [
     {
       // Non elencata esplicitamente tra le colonne richieste, ma senza titolo
@@ -196,13 +220,36 @@ export function DealsTable({
     },
     {
       // Nessuna modifica/eliminazione trattativa richiesta in questo step
-      // (solo creazione): colonna presente come da richiesta, ma senza
-      // azioni cablate — stesso pattern "non wired in questo step" già usato
-      // altrove nel progetto (vedi AGENTS.md, sezione AppShell).
+      // (solo creazione): stesso pattern "non wired in questo step" già usato
+      // altrove nel progetto (vedi AGENTS.md, sezione AppShell) per il resto
+      // della colonna. L'unica azione cablata è la graffetta Allegati.
       key: 'dealId',
       label: 'Azioni',
-      width: '80px',
-      render: () => <span className="text-text-muted">—</span>,
+      width: '90px',
+      render: (row) => {
+        const count = row.attachments.length;
+        return (
+          <button
+            type="button"
+            onClick={() => setAttachmentsDealId(row.dealId)}
+            aria-label={count > 0 ? `Allegati di ${row.title} (${count})` : `Allegati di ${row.title}`}
+            title="Allegati"
+            // Badge numerico reso in linea accanto all'icona, non sovrapposto
+            // al suo angolo come nel mockup: le celle di Table sono avvolte
+            // in uno <span className="truncate"> (overflow-hidden), che
+            // taglierebbe un badge posizionato con offset negativi fuori dal
+            // riquadro dell'icona. Vedi riepilogo.
+            className="flex items-center gap-nl-4xs rounded-icon px-nl-4xs py-nl-4xs text-text-secondary hover:bg-surface-3 hover:text-text-primary"
+          >
+            <Paperclip size={15} strokeWidth={1.8} />
+            {count > 0 && (
+              <span className="flex h-[16px] min-w-[16px] items-center justify-center rounded-full bg-primary px-[3px] font-mono text-[10px] leading-none text-white">
+                {count}
+              </span>
+            )}
+          </button>
+        );
+      },
     },
   ];
 
@@ -211,11 +258,24 @@ export function DealsTable({
   }
 
   return (
-    <Table
-      columns={columns}
-      rows={deals}
-      rowKey={(row) => row.dealId}
-      renderExpanded={renderExpandedDeal}
-    />
+    <>
+      <Table
+        columns={columns}
+        rows={deals}
+        rowKey={(row) => row.dealId}
+        renderExpanded={renderExpandedDeal}
+      />
+
+      {attachmentsDeal && (
+        <AttachmentsModal
+          dealId={attachmentsDeal.dealId}
+          dealTitle={attachmentsDeal.title}
+          dealSubtitle={attachmentsDeal.companyName ?? attachmentsDeal.contactName}
+          attachments={attachmentsDeal.attachments}
+          currentUserName={currentUserName}
+          onClose={() => setAttachmentsDealId(null)}
+        />
+      )}
+    </>
   );
 }
