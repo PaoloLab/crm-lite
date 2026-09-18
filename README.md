@@ -35,6 +35,12 @@ The easiest way to deploy your Next.js app is to use the [Vercel Platform](https
 
 Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
 
+## DB 
+Ho utilizzato neon, piattaforma che ti da a disposizione un ambiente cloud per far girare il DB Postgres
+
+## Storage 
+Utilizzato CloudFlare , su cui gira un R2 Object Storage. Funziona con protocollo S3 .
+
 
 Struttura dati
 
