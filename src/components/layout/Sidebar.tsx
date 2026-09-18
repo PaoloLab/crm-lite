@@ -8,7 +8,6 @@ import {
   Users,
   TrendingUp,
   Clock,
-  BarChart3,
   Settings,
   LogOut,
   type LucideIcon,
@@ -22,7 +21,8 @@ interface NavItem {
 
 // Voci dedotte dalle icone nello screenshot (deciso, vedi riepilogo):
 // building -> Aziende, users -> Contatti, trending-up -> Trattative/Pipeline,
-// clock -> Attività, bar-chart -> Report. Le pagine di /activities, /reports
+// clock -> Attività. Voce "Report" rimossa dal menu (pagina non ancora
+// attivata), la pagina /reports resta intatta. Le pagine di /activities
 // non esistono ancora: il click porta a un 404 di Next.js finché non
 // verranno costruite.
 const NAV_ITEMS: NavItem[] = [
@@ -31,7 +31,6 @@ const NAV_ITEMS: NavItem[] = [
   { href: '/contacts', label: 'Contatti', icon: Users },
   { href: '/deals', label: 'Trattative', icon: TrendingUp },
   { href: '/activities', label: 'Attività', icon: Clock },
-  { href: '/reports', label: 'Report', icon: BarChart3 },
 ];
 
 function isActivePath(pathname: string, href: string): boolean {
